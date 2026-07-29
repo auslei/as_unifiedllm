@@ -1,0 +1,33 @@
+[project]
+name = "ic-unifiedllm"
+version = "0.1.0"
+description = "Unified LangChain LLM wrapper for ic-projects"
+requires-python = ">=3.12"
+dependencies = [
+    "langchain-core>=0.1.0",
+    "langchain-community>=0.0.10",
+    "langchain-ollama>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "langchain-deepseek>=0.1.0",
+    "pydantic>=2.0.0",
+    "requests>=2.31.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ic_unifiedllm"]
+
+[tool.uv]
+managed = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
