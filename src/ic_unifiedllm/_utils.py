@@ -3,7 +3,6 @@ import gc
 import io
 import logging
 import os
-import re
 from pathlib import Path
 from typing import Any, Union
 
@@ -14,6 +13,8 @@ from ic_unifiedllm._provider import LLMSettings
 from ic_unifiedllm._model import clean_reasoning_content, get_tokens_for_model, UnifiedChatModel
 
 logger = logging.getLogger("ic_unifiedllm")
+
+_IMAGE_MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif"}
 
 
 def get_llm(llm_setting: LLMSettings) -> "UnifiedChatModel":  # noqa: F821
@@ -36,10 +37,7 @@ def get_message_content(msg: BaseMessage) -> str:
     else:
         content = str(msg.content)
 
-    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
-    content = re.sub(r'<tool_call>.*?</tool_call>', '', content, flags=re.DOTALL)
-    content = content.replace('</think>', '').replace('</tool_call>', '')
-    return content
+    return clean_reasoning_content(content)
 
 
 def get_token_count(messages: list[BaseMessage]) -> int:
@@ -80,7 +78,7 @@ def infer_vision(
     except ImportError:
         Image = None  # type: ignore
 
-    # Encode image to base64 JPEG
+    mime = "image/jpeg"
     if Image and isinstance(image_source, Image.Image):
         buf = io.BytesIO()
         image_source.convert("RGB").save(buf, format="JPEG", quality=85)
@@ -97,18 +95,22 @@ def infer_vision(
             Image.open(path).convert("RGB").save(buf, format="JPEG", quality=85)
             b64 = base64.b64encode(buf.getvalue()).decode()
         else:
+            mime = _IMAGE_MIME.get(suffix, "image/jpeg")
             b64 = base64.b64encode(path.read_bytes()).decode()
 
     llm = get_llm(settings)
     message = HumanMessage(content=[
-        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
         {"type": "text", "text": prompt},
     ])
     response = llm.invoke([message])
     return get_message_content(response), extract_token_usage(response)
 
 
-def get_ollama_context_length(model: str, base_url: str = "http://localhost:11434") -> int | None:
+def get_ollama_context_length(model: str, base_url: str | None = None) -> int | None:
+    if base_url is None:
+        base_url = (os.getenv("OLLAMA_BASE_URL") or os.getenv("OLLAMA_URL")
+                    or os.getenv("OLLAMA_API_URL", "http://localhost:11434"))
     r = requests.post(f"{base_url}/api/show", json={"name": model})
     r.raise_for_status()
     return r.json().get("model_info", {}).get("llama.context_length")

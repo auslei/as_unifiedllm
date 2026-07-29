@@ -1,6 +1,10 @@
+import os
 from dataclasses import dataclass
+from pathlib import Path
 
-_BASE_BLOBS_LOCATION = "/usr/share/ollama/.ollama/models/blobs"
+_BASE_BLOBS_LOCATION = str(
+    Path(os.getenv("OLLAMA_MODELS", str(Path.home() / ".ollama" / "models"))) / "blobs"
+)
 
 LLAMA_CPP_MODEL_PATHS = {
     "qwen3:14b": f"{_BASE_BLOBS_LOCATION}/sha256-a8cc1361f3145dc01f6d77c6c82c9116b9ffe3c97b34716fe20418455876c40e",

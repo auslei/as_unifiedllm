@@ -20,6 +20,7 @@ logger = logging.getLogger("ic_unifiedllm")
 
 _DEFAULT_LLM_CONTEXT_WINDOW = 16384
 _RAW_LLM_CACHE: Dict[tuple, Any] = {}
+_OPENAI_REASONING_MODEL = re.compile(r'^o\d')
 
 STOP_TOKENS = {
     "qwen": ["<|im_end|>", "<|endoftext|>"],
@@ -66,6 +67,8 @@ class UnifiedChatModel(BaseChatModel):
     thinking: bool = True
 
     model: Any = Field(exclude=True, default=None)
+    bound_tools: Optional[List[Any]] = Field(exclude=True, default=None)
+    bound_tools_kwargs: Dict[str, Any] = Field(exclude=True, default_factory=dict)
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def model_post_init(self, __context: Any) -> None:
@@ -82,12 +85,12 @@ class UnifiedChatModel(BaseChatModel):
         provider: str, model_name: str, temperature: float,
         context_window: Optional[int], top_p: Optional[float], thinking: bool,
     ) -> Any:
-        cache_key = (provider, model_name, temperature, context_window, top_p, thinking)
+        temp = 0.0 if temperature is None else temperature
+        cache_key = (provider, model_name, temp, context_window, top_p, thinking)
         if cache_key in _RAW_LLM_CACHE:
             return _RAW_LLM_CACHE[cache_key]
 
         logger.info(f"Initializing NEW raw LLM: {provider}/{model_name} (thinking={thinking})")
-        temp = 0.0 if temperature is None else temperature
 
         if provider == "deepseek":
             api_key = os.getenv("DEEPSEEK_API_KEY")
@@ -97,27 +100,29 @@ class UnifiedChatModel(BaseChatModel):
             if not thinking and "reasoner" in model_name:
                 logger.info("thinking=False: Swapping deepseek-reasoner for deepseek-chat")
                 effective_model = "deepseek-chat"
-            llm = ChatDeepSeek(model=effective_model, api_key=SecretStr(api_key), temperature=temp)
+            llm = ChatDeepSeek(model=effective_model, api_key=SecretStr(api_key), temperature=temp, top_p=top_p)
 
         elif provider == "openai":
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable not set")
             kwargs: Dict[str, Any] = {"model": model_name, "api_key": SecretStr(api_key), "temperature": temp}
-            if not thinking:
+            if top_p is not None:
+                kwargs["top_p"] = top_p
+            if not thinking and _OPENAI_REASONING_MODEL.match(model_name):
                 kwargs["reasoning_effort"] = "low"
             llm = ChatOpenAI(**kwargs)
 
         elif provider == "lms":
             base_url = os.getenv("LMSTUDIO_BASE_URL", "http://localhost:1234/v1")
-            llm = ChatOpenAI(model=model_name, api_key=SecretStr("lm-studio"), base_url=base_url, temperature=temp)
+            llm = ChatOpenAI(model=model_name, api_key=SecretStr("lm-studio"), base_url=base_url, temperature=temp, top_p=top_p)
 
         elif provider == "openrouter":
             api_key = os.getenv("OPENROUTER_API_KEY")
             if not api_key:
                 raise ValueError("OPENROUTER_API_KEY environment variable not set")
             llm = ChatOpenAI(model=model_name, api_key=SecretStr(api_key),
-                             base_url="https://openrouter.ai/api/v1", temperature=temp)
+                             base_url="https://openrouter.ai/api/v1", temperature=temp, top_p=top_p)
 
         elif provider == "ollama":
             base_url = (os.getenv("OLLAMA_BASE_URL") or os.getenv("OLLAMA_URL")
@@ -230,12 +235,34 @@ class UnifiedChatModel(BaseChatModel):
         if thinking is not None and thinking != self.thinking:
             yield from self._variant(thinking).stream(input, config=config, **kwargs)
             return
+        if not self.thinking:
+            # ponytail: buffers full response to strip <think> blocks; loses per-token streaming
+            chunks = list(self.model.stream(input, config=config, **kwargs))
+            if chunks:
+                combined = chunks[0]
+                for c in chunks[1:]:
+                    combined = combined + c
+                if hasattr(combined, "content") and isinstance(combined.content, str):
+                    combined.content = clean_reasoning_content(combined.content)
+                yield combined
+            return
         yield from self.model.stream(input, config=config, **kwargs)
 
     async def astream(self, input: Any, config=None, *, thinking: Optional[bool] = None, **kwargs):
         if thinking is not None and thinking != self.thinking:
             async for chunk in self._variant(thinking).astream(input, config=config, **kwargs):
                 yield chunk
+            return
+        if not self.thinking:
+            # ponytail: buffers full response to strip <think> blocks; loses per-token streaming
+            chunks = [c async for c in self.model.astream(input, config=config, **kwargs)]
+            if chunks:
+                combined = chunks[0]
+                for c in chunks[1:]:
+                    combined = combined + c
+                if hasattr(combined, "content") and isinstance(combined.content, str):
+                    combined.content = clean_reasoning_content(combined.content)
+                yield combined
             return
         async for chunk in self.model.astream(input, config=config, **kwargs):
             yield chunk
@@ -245,6 +272,7 @@ class UnifiedChatModel(BaseChatModel):
             provider=self.provider, model_name=self.model_name, temperature=self.temperature,
             context_window=self.context_window, top_p=self.top_p, thinking=self.thinking,
             model=self.model.bind_tools(tools, **kwargs),
+            bound_tools=tools, bound_tools_kwargs=kwargs,
         )
 
     def bind(self, **kwargs) -> "UnifiedChatModel":
@@ -255,18 +283,31 @@ class UnifiedChatModel(BaseChatModel):
         )
 
     def _variant(self, thinking: bool) -> "UnifiedChatModel":
-        return UnifiedChatModel(
+        new = UnifiedChatModel(
             provider=self.provider, model_name=self.model_name, temperature=self.temperature,
             context_window=self.context_window, top_p=self.top_p, thinking=thinking,
         )
+        if self.bound_tools:
+            return UnifiedChatModel(
+                provider=self.provider, model_name=self.model_name, temperature=self.temperature,
+                context_window=self.context_window, top_p=self.top_p, thinking=thinking,
+                model=new.model.bind_tools(self.bound_tools, **self.bound_tools_kwargs),
+                bound_tools=self.bound_tools, bound_tools_kwargs=self.bound_tools_kwargs,
+            )
+        return new
 
     def _inject_schema(self, input: Any, schema: Type[BaseModel]) -> Any:
         if isinstance(input, str):
             return build_structured_prompt(input, schema)
         if isinstance(input, list) and input:
             last = input[-1]
-            if isinstance(last, (HumanMessage, SystemMessage)) and isinstance(last.content, str):
+            if isinstance(last, (HumanMessage, SystemMessage)):
                 input = list(input)
-                input[-1] = type(last)(content=build_structured_prompt(last.content, schema),
-                                       **last.additional_kwargs)
+                if isinstance(last.content, str):
+                    input[-1] = type(last)(content=build_structured_prompt(last.content, schema),
+                                           **last.additional_kwargs)
+                elif isinstance(last.content, list):
+                    schema_text = build_structured_prompt("", schema).strip()
+                    input[-1] = type(last)(content=list(last.content) + [{"type": "text", "text": schema_text}],
+                                           **last.additional_kwargs)
         return input
