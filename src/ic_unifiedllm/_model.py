@@ -100,10 +100,7 @@ class UnifiedChatModel(BaseChatModel):
             if not thinking and "reasoner" in model_name:
                 logger.info("thinking=False: Swapping deepseek-reasoner for deepseek-chat")
                 effective_model = "deepseek-chat"
-            ds_kwargs: Dict[str, Any] = {"model": effective_model, "api_key": SecretStr(api_key), "temperature": temp, "top_p": top_p}
-            if not thinking:
-                ds_kwargs["reasoning"] = False
-            llm = ChatDeepSeek(**ds_kwargs)
+            llm = ChatDeepSeek(model=effective_model, api_key=SecretStr(api_key), temperature=temp, top_p=top_p)
 
         elif provider == "openai":
             api_key = os.getenv("OPENAI_API_KEY")

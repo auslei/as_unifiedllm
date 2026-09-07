@@ -106,20 +106,6 @@ def test_deepseek_non_reasoner_model_unchanged(monkeypatch):
         call_kwargs = MockDS.call_args[1]
     assert call_kwargs["model"] == "deepseek-chat"
 
-def test_deepseek_thinking_false_sets_reasoning_false(monkeypatch):
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
-    with patch("ic_unifiedllm._model.ChatDeepSeek") as MockDS:
-        _init("deepseek", "deepseek-chat", thinking=False)
-        call_kwargs = MockDS.call_args[1]
-    assert call_kwargs.get("reasoning") is False
-
-def test_deepseek_thinking_true_no_reasoning_key(monkeypatch):
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
-    with patch("ic_unifiedllm._model.ChatDeepSeek") as MockDS:
-        _init("deepseek", "deepseek-chat", thinking=True)
-        call_kwargs = MockDS.call_args[1]
-    assert "reasoning" not in call_kwargs
-
 
 # --- lms (LMStudio) ---
 
