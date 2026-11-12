@@ -1,17 +1,17 @@
-# ic-unifiedllm API Card
+# as-unifiedllm API Card
 
-Quick reference for using `ic-unifiedllm` in other ic-* services.
+Quick reference for using `as-unifiedllm` in other ic-* services.
 
 ## Installation
 
 ```toml
 # pyproject.toml — add as a path dependency
 [tool.uv.sources]
-ic-unifiedllm = { path = "../ic_unifiedllm", editable = true }
+as-unifiedllm = { path = "../as_unifiedllm", editable = true }
 ```
 
 ```bash
-uv add ic-unifiedllm
+uv add as-unifiedllm
 ```
 
 ---
@@ -29,7 +29,7 @@ uv add ic-unifiedllm
 ## Basic usage
 
 ```python
-from ic_unifiedllm import LLMSettings, get_llm
+from as_unifiedllm import LLMSettings, get_llm
 
 llm = get_llm(LLMSettings(provider="ollama", model_name="qwen3:14b"))
 
@@ -91,7 +91,7 @@ fallback LLM repair if needed.
 
 ```python
 from pydantic import BaseModel
-from ic_unifiedllm import LLMSettings, get_llm
+from as_unifiedllm import LLMSettings, get_llm
 
 class Summary(BaseModel):
     title: str
@@ -165,7 +165,7 @@ response = llm_with_tools.invoke("What's the weather in Sydney?")
 returns `(text, token_usage)`. The image is encoded to base64 JPEG internally.
 
 ```python
-from ic_unifiedllm import LLMSettings, infer_vision
+from as_unifiedllm import LLMSettings, infer_vision
 
 settings = LLMSettings(provider="ollama", model_name="llava:13b")
 
@@ -195,7 +195,7 @@ print(usage)  # {"input_tokens": ..., "output_tokens": ..., "total_tokens": ...}
 ## Utilities
 
 ```python
-from ic_unifiedllm import (
+from as_unifiedllm import (
     infer_vision,           # image + prompt → (text, token_usage)
     get_message_content,    # extract plain text from any AIMessage
     get_token_count,        # rough char-based count across a message list

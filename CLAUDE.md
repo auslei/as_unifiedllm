@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`ic-unifiedllm` is a shared internal Python library (installed as an editable package via uv) that wraps multiple LLM providers behind a single LangChain-compatible interface. It is consumed by `ic_agents` and other ic-* services.
+`as-unifiedllm` is a shared internal Python library (installed as an editable package via uv) that wraps multiple LLM providers behind a single LangChain-compatible interface. It is consumed by `as_agents` and other ic-* services.
 
 ## Commands
 
@@ -53,7 +53,7 @@ Four modules, all exported from `__init__.py`:
 1. Add its branch to `UnifiedChatModel._init_underlying_model` in `_model.py`.
 2. Export nothing new — `get_llm` and `UnifiedChatModel` already cover it via the `provider` string.
 
-## Standards (from `ic_common/GLOBAL_STANDARDS.md`)
+## Standards (from `as_common/GLOBAL_STANDARDS.md`)
 
 ### Code style
 - `snake_case` for variables and functions; `PascalCase` for classes.
@@ -63,7 +63,7 @@ Four modules, all exported from `__init__.py`:
 - Comments only where intent is non-obvious (no narrating what the code does).
 
 ### Logging
-- Use the named logger `logging.getLogger("ic_unifiedllm")` — already established in every module.
+- Use the named logger `logging.getLogger("as_unifiedllm")` — already established in every module.
 - No bare `print()`. Log at `INFO` before major steps to aid debugging.
 - Raise clear, actionable errors; don't let raw tracebacks surface to callers.
 
