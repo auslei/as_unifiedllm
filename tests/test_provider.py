@@ -1,4 +1,4 @@
-from ic_unifiedllm._provider import LLAMA_CPP_MODEL_PATHS, LLMProvider, LLMSettings
+from as_unifiedllm._provider import LLAMA_CPP_MODEL_PATHS, LLMProvider, LLMSettings
 
 
 def test_llm_provider_fields():

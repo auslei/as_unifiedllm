@@ -9,16 +9,16 @@ from typing import Any, Union
 import requests
 from langchain_core.messages import BaseMessage, HumanMessage
 
-from ic_unifiedllm._provider import LLMSettings
-from ic_unifiedllm._model import clean_reasoning_content, get_tokens_for_model, UnifiedChatModel
+from as_unifiedllm._provider import LLMSettings
+from as_unifiedllm._model import clean_reasoning_content, get_tokens_for_model, UnifiedChatModel
 
-logger = logging.getLogger("ic_unifiedllm")
+logger = logging.getLogger("as_unifiedllm")
 
 _IMAGE_MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif"}
 
 
 def get_llm(llm_setting: LLMSettings) -> "UnifiedChatModel":  # noqa: F821
-    from ic_unifiedllm._model import UnifiedChatModel
+    from as_unifiedllm._model import UnifiedChatModel
     return UnifiedChatModel(
         provider=llm_setting.provider,
         model_name=llm_setting.model_name,

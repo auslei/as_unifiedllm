@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import BaseModel
 
-from ic_unifiedllm._structured import (
+from as_unifiedllm._structured import (
     _coerce_message_text,
     _normalize_schema_echo,
     _recover_schema_value,

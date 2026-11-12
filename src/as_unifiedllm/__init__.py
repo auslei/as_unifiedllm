@@ -1,7 +1,7 @@
-from ic_unifiedllm._provider import LLMProvider, LLMSettings, LLAMA_CPP_MODEL_PATHS
-from ic_unifiedllm._model import UnifiedChatModel, clean_reasoning_content, get_tokens_for_model
-from ic_unifiedllm._structured import build_structured_prompt, parse_structured_output, structured_output_repair_fn
-from ic_unifiedllm._utils import (
+from as_unifiedllm._provider import LLMProvider, LLMSettings, LLAMA_CPP_MODEL_PATHS
+from as_unifiedllm._model import UnifiedChatModel, clean_reasoning_content, get_tokens_for_model
+from as_unifiedllm._structured import build_structured_prompt, parse_structured_output, structured_output_repair_fn
+from as_unifiedllm._utils import (
     get_llm,
     get_message_content,
     get_token_count,

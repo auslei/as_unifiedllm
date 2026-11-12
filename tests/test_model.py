@@ -5,7 +5,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel
 
-from ic_unifiedllm._model import (
+from as_unifiedllm._model import (
     STOP_TOKENS,
     UnifiedChatModel,
     clean_reasoning_content,

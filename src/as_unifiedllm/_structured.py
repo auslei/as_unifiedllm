@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage
 
-logger = logging.getLogger("ic_unifiedllm")
+logger = logging.getLogger("as_unifiedllm")
 
 
 def _recover_schema_value(value):

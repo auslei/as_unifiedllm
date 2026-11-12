@@ -13,10 +13,10 @@ from langchain_deepseek.chat_models import ChatDeepSeek
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI
 
-from ic_unifiedllm._provider import LLAMA_CPP_MODEL_PATHS
-from ic_unifiedllm._structured import build_structured_prompt, parse_structured_output
+from as_unifiedllm._provider import LLAMA_CPP_MODEL_PATHS
+from as_unifiedllm._structured import build_structured_prompt, parse_structured_output
 
-logger = logging.getLogger("ic_unifiedllm")
+logger = logging.getLogger("as_unifiedllm")
 
 _DEFAULT_LLM_CONTEXT_WINDOW = 16384
 _RAW_LLM_CACHE: Dict[tuple, Any] = {}
