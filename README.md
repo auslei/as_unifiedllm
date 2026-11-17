@@ -1,11 +1,15 @@
-# as-unifiedllm API Card
+# as-unifiedllm
 
-Quick reference for using `as-unifiedllm` in other ic-* services.
+Shared internal Python library that wraps multiple LLM providers behind a single LangChain-compatible interface. Consumed by `as_agents` and other as-* services.
+
+Supported providers: Ollama, OpenAI, DeepSeek, LMStudio, OpenRouter, LlamaCpp.
 
 ## Installation
 
+Add as an editable path dependency in the consuming project:
+
 ```toml
-# pyproject.toml — add as a path dependency
+# pyproject.toml
 [tool.uv.sources]
 as-unifiedllm = { path = "../as_unifiedllm", editable = true }
 ```
@@ -14,8 +18,6 @@ as-unifiedllm = { path = "../as_unifiedllm", editable = true }
 uv add as-unifiedllm
 ```
 
----
-
 ## Core concepts
 
 | Class / function | Purpose |
@@ -23,8 +25,6 @@ uv add as-unifiedllm
 | `LLMSettings` | Config dataclass: provider, model, temperature, context window |
 | `get_llm(settings)` | Factory — returns a ready `UnifiedChatModel` |
 | `UnifiedChatModel` | LangChain `BaseChatModel` subclass; use directly if you need more control |
-
----
 
 ## Basic usage
 
@@ -36,8 +36,6 @@ llm = get_llm(LLMSettings(provider="ollama", model_name="qwen3:14b"))
 response = llm.invoke("Summarise the French Revolution in one sentence.")
 print(response.content)
 ```
-
----
 
 ## Providers
 
@@ -81,8 +79,6 @@ llm = get_llm(LLMSettings(provider="llama_cpp", model_name="qwen3:14b"))
 # Model path resolved from LLAMA_CPP_MODEL_PATHS in _provider.py
 ```
 
----
-
 ## Structured output
 
 Pass a Pydantic model as `schema=` to get a typed object back. The prompt is
@@ -104,8 +100,6 @@ print(result.title)
 print(result.key_points)
 ```
 
----
-
 ## Thinking / reasoning control
 
 ```python
@@ -122,8 +116,6 @@ When `thinking=False`:
 - OpenAI: sets `reasoning_effort="low"`
 - Ollama: sets `reasoning=False`
 
----
-
 ## Async and streaming
 
 ```python
@@ -138,8 +130,6 @@ for chunk in llm.stream("Tell me a story"):
 async for chunk in llm.astream("Tell me a story"):
     print(chunk.content, end="", flush=True)
 ```
-
----
 
 ## Tool binding
 
@@ -156,8 +146,6 @@ def get_weather(city: str) -> str:
 llm_with_tools = llm.bind_tools([get_weather])
 response = llm_with_tools.invoke("What's the weather in Sydney?")
 ```
-
----
 
 ## Vision / image input
 
@@ -185,12 +173,10 @@ print(text)
 print(usage)  # {"input_tokens": ..., "output_tokens": ..., "total_tokens": ...}
 ```
 
-**Notes:**
-- Pillow (`pip install Pillow`) is optional — only needed for PIL.Image input or HEIC/HEIF files. JPEG/PNG/WebP paths work without it.
+Notes:
+- Pillow is optional — only needed for PIL.Image input or HEIC/HEIF files. JPEG/PNG/WebP paths work without it.
 - Any provider whose underlying model supports `image_url` content blocks will work (Ollama vision models, OpenAI GPT-4o, OpenRouter vision routes, LMStudio vision models).
 - HEIC/HEIF files are converted to JPEG before sending.
-
----
 
 ## Utilities
 
@@ -208,8 +194,6 @@ from as_unifiedllm import (
 usage = extract_token_usage(response)
 # {"input_tokens": 42, "output_tokens": 120, "total_tokens": 162}
 ```
-
----
 
 ## LLM instance cache
 
